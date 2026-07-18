@@ -52,6 +52,11 @@ h1 { font: 700 28px/1.18 'Fraunces', serif; margin-bottom: 8px; }
 .ring { width: 40px; height: 40px; border-radius: 50%; border: 4px solid rgba(255,255,255,.2); border-top-color: #fff; animation: spin .7s linear infinite; margin: 0 auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.home-wrap { padding: 10vh 0 40px; text-align: center; }
+.home-badge { width: 84px; height: 84px; border-radius: 24px; background: var(--green-lt); color: var(--green); display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; }
+.home-badge svg { width: 46px; height: 46px; }
+#s-home h1 { margin-top: 4px; }
+
 .tip { background: var(--gold-lt); border: 1.5px solid #e2cb8e; border-radius: 14px; padding: 14px; display: flex; gap: 12px; font-size: 14px; color: #5c3f0e; line-height: 1.5; margin-bottom: 24px; }
 .tip-i { flex-shrink: 0; font-size: 18px; margin-top: 1px; }
 
@@ -131,8 +136,30 @@ canvas { display: none; }
     <button class="list-btn" onclick="openRecheckList()">📋 Recheck List</button>
   </div>
 
-  <!-- CAMERA (also the home screen) -->
-  <div class="screen active" id="s-camera">
+  <!-- HOME -->
+  <div class="screen active" id="s-home">
+    <div class="home-wrap">
+      <div class="home-badge">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M14 10c0-2.2 2-4 4-4h12c2 0 4 1.8 4 4v3c0 5-4 8-10 8s-10-3-10-8v-3z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M14 13l-6 4 3 5 3-2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M34 13l6 4-3 5-3-2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M17 29c0-1 1-2 2-2h10c1 0 2 1 2 2v9a2 2 0 01-2 2H19a2 2 0 01-2-2v-9z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M21 33.5l2 2 4-4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="eye" style="text-align:center">SAJC</div>
+      <h1 style="text-align:center">Grooming &amp; Attire Scanner</h1>
+      <p class="sub" style="text-align:center">Scan a student card or search by name to log a check or process a recheck.</p>
+    </div>
+    <div class="stack">
+      <button class="btn btn-p" onclick="nav('camera')">Start Check</button>
+      <button class="btn btn-s" onclick="openRecheckList()">📋 View Recheck List</button>
+    </div>
+  </div>
+
+  <!-- CAMERA -->
+  <div class="screen" id="s-camera">
     <div class="eye">Grooming Check</div>
     <h1>Scan the card</h1>
 
@@ -291,7 +318,7 @@ var studentStatus = null;     // result of getStudentStatus
 var chosenCategories = [];    // standard flow: selected categories
 var stillOpen = [];           // recheck flow: categories NOT yet toggled fixed
 var lastUndoToken = null;
-var stack = ['camera'];
+var stack = ['home'];
 var mediaStream = null;
 var cameraEverStarted = false;
 var searchDebounceTimer = null;
@@ -338,7 +365,7 @@ function showToast(msg, ms) {
 function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
   document.getElementById('s-' + id).classList.add('active');
-  document.getElementById('backBtn').style.visibility = (id === 'camera' || id === 'success') ? 'hidden' : 'visible';
+  document.getElementById('backBtn').style.visibility = (id === 'home' || id === 'camera' || id === 'success') ? 'hidden' : 'visible';
   window.scrollTo(0, 0);
 }
 function nav(id) { stack.push(id); show(id); }
@@ -350,7 +377,7 @@ function goBack() {
 }
 function goHome() {
   stopCamera(); selected = null; studentStatus = null; chosenCategories = []; stillOpen = [];
-  stack = ['camera']; show('camera'); resetCameraPanels();
+  stack = ['home']; show('home'); resetCameraPanels();
 }
 
 // ─── CAMERA (ported near-verbatim from the scanner) ────────────────
@@ -693,14 +720,20 @@ function renderRecheckList(students) {
     el.onclick = function () {
       selected = { name: s.name, cls: s.cls, gender: s.gender };
       studentStatus = { ok: true, mode: 'recheck', name: s.name, cls: s.cls, gender: s.gender, openCategories: s.categories };
-      stack = ['camera'];
+      stack = ['home'];
       enterRecheckFlow(studentStatus);
     };
     wrap.appendChild(el);
   });
 }
 
-function nextScan() { selected = null; studentStatus = null; chosenCategories = []; stillOpen = []; lastUndoToken = null; goHome(); skipToSearch(); }
+function nextScan() {
+  selected = null; studentStatus = null; chosenCategories = []; stillOpen = []; lastUndoToken = null;
+  stopCamera();
+  stack = ['home', 'camera'];
+  resetCameraPanels();
+  show('camera');
+}
 </script>
 </body>
 </html>
