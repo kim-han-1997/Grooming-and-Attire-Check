@@ -287,7 +287,7 @@ var GAS_URL = 'https://script.google.com/macros/s/AKfycbzWSGwry0n1H0yvJP05AIKLc9
 // the roster and log in Workspace and only ever sends back the small
 // slice of data actually needed for the current screen.
 var selected = null;          // { name, cls, gender, cohort }
-var status = null;            // result of getStudentStatus
+var studentStatus = null;     // result of getStudentStatus
 var chosenCategories = [];    // standard flow: selected categories
 var stillOpen = [];           // recheck flow: categories NOT yet toggled fixed
 var lastUndoToken = null;
@@ -349,7 +349,7 @@ function goBack() {
   show(stack[stack.length - 1]);
 }
 function goHome() {
-  stopCamera(); selected = null; status = null; chosenCategories = []; stillOpen = [];
+  stopCamera(); selected = null; studentStatus = null; chosenCategories = []; stillOpen = [];
   stack = ['camera']; show('camera'); resetCameraPanels();
 }
 
@@ -526,7 +526,7 @@ function chooseStudent(m) {
   gasGet('getStudentStatus', { name: m.name, cls: m.cls }).then(function (res) {
     document.getElementById('ocrSpinner').classList.remove('show');
     if (!res || !res.ok) { showToast(res && res.error || 'Could not load student status.', 4000); return; }
-    status = res;
+    studentStatus = res;
     if (res.mode === 'recheck') enterRecheckFlow(res);
     else enterStandardFlow(res);
   }).catch(function (err) {
@@ -572,7 +572,7 @@ function submitStandard() {
   var btn = document.getElementById('cfsSubmitBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
   var remarks = document.getElementById('remarksBox').value.trim();
-  gasPost('submitStandardCheck', { name: selected.name, cls: selected.cls, gender: status.gender, categories: chosenCategories, remarks: remarks })
+  gasPost('submitStandardCheck', { name: selected.name, cls: selected.cls, gender: studentStatus.gender, categories: chosenCategories, remarks: remarks })
     .then(function (res) {
       btn.disabled = false; btn.textContent = '✓ Confirm & Log';
       if (!res || !res.ok) { showToast('Save failed: ' + ((res && res.error) || 'unknown') + '. Tap to retry.', 4500); return; }
@@ -614,7 +614,7 @@ function renderRcPills(allOpen) {
     fixedCount + ' of ' + allOpen.length + ' fixed' + (stillOpen.length ? ', ' + stillOpen.length + ' still present' : ' — fully cleared!');
 }
 function goToConfirmRecheck() {
-  var allOpen = status.openCategories;
+  var allOpen = studentStatus.openCategories;
   var fixed = allOpen.filter(function (c) { return stillOpen.indexOf(c) === -1; });
   document.getElementById('cfrName').textContent = selected.name;
   document.getElementById('cfrClass').textContent = selected.cls;
@@ -629,7 +629,7 @@ function goToConfirmRecheck() {
 function submitRecheck() {
   var btn = document.getElementById('cfrSubmitBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
-  var allOpen = status.openCategories;
+  var allOpen = studentStatus.openCategories;
   var fixed = allOpen.filter(function (c) { return stillOpen.indexOf(c) === -1; });
   gasPost('submitRecheck', { name: selected.name, cls: selected.cls, resolvedCategories: fixed, stillOpenCategories: stillOpen })
     .then(function (res) {
@@ -692,15 +692,15 @@ function renderRecheckList(students) {
       '<div class="rl-meta">' + s.cls + ' · ' + s.categories.join(', ') + '</div>';
     el.onclick = function () {
       selected = { name: s.name, cls: s.cls, gender: s.gender };
-      status = { ok: true, mode: 'recheck', name: s.name, cls: s.cls, gender: s.gender, openCategories: s.categories };
+      studentStatus = { ok: true, mode: 'recheck', name: s.name, cls: s.cls, gender: s.gender, openCategories: s.categories };
       stack = ['camera'];
-      enterRecheckFlow(status);
+      enterRecheckFlow(studentStatus);
     };
     wrap.appendChild(el);
   });
 }
 
-function nextScan() { selected = null; status = null; chosenCategories = []; stillOpen = []; lastUndoToken = null; goHome(); skipToSearch(); }
+function nextScan() { selected = null; studentStatus = null; chosenCategories = []; stillOpen = []; lastUndoToken = null; goHome(); skipToSearch(); }
 </script>
 </body>
 </html>
